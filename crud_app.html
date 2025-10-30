@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment 2: Single Page CRUD App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <style>
+        .container {
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+        .card {
+            margin-bottom: 15px;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            display: none; /* Initially hidden */
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-primary">
+    <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">CRUD App</span>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <h5 id="formTitle">Create New Post</h5>
+                </div>
+                <div class="card-body position-relative">
+                    <div id="form-loading" class="loading-overlay">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <form id="postForm">
+                        <input type="hidden" id="postId" value=""> 
+                        
+                        <div class="mb-3">
+                            <label for="postTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="postTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="postBody" class="form-label">Body</label>
+                            <textarea class="form-control" id="postBody" rows="4" required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100" id="submitBtn">
+                            <i class="fas fa-plus-circle"></i> Add Post
+                        </button>
+                        <button type="button" class="btn btn-secondary w-100 mt-2 d-none" id="cancelEditBtn">
+                            Cancel Edit
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <h2 class="mb-4">All Posts</h2>
+            <div class="card">
+                <div class="card-body position-relative">
+                    <div id="list-loading" class="loading-overlay" style="display: flex;">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Loading posts...</span>
+                        </div>
+                    </div>
+                    <div id="postsList" class="row">
+                        </div>
+                    <p id="noPostsMessage" class="text-center text-muted mt-3 d-none">No posts found.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    const API_URL = 'https://jsonplaceholder.typicode.com/posts';
+    
+    // State variables
+    let isEditing = false;
+    let currentPostId = null;
+
+    // --- Helper Functions ---
+
+    /** Shows/Hides a loading spinner for a specific element */
+    function toggleLoading(selector, show) {
+        $(selector).css('display', show ? 'flex' : 'none');
+    }
+
+    /** Shows a Bootstrap-style alert for user feedback */
+    function showNotification(message, type = 'success') {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        $('.container').prepend(alertHtml);
+        // Auto-close after 5 seconds
+        setTimeout(() => $('.alert').alert('close'), 5000);
+    }
+
+    /** Resets the form to "Create New Post" mode */
+    function resetForm() {
+        isEditing = false;
+        currentPostId = null;
+        $('#formTitle').text('Create New Post');
+        $('#postId').val('');
+        $('#postTitle').val('');
+        $('#postBody').val('');
+        $('#submitBtn').html('<i class="fas fa-plus-circle"></i> Add Post').removeClass('btn-warning').addClass('btn-primary');
+        $('#cancelEditBtn').addClass('d-none');
+    }
+
+    /** Creates the HTML card for a single post */
+    function createPostCard(post) {
+        return `
+            <div class="col-12" id="post-${post.id}">
+                <div class="card shadow-sm border-info bg-light-subtle">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">${post.title} <span class="badge bg-secondary ms-2">ID: ${post.id}</span></h5>
+                        <p class="card-text">${post.body}</p>
+                        <button class="btn btn-sm btn-warning edit-btn" data-id="${post.id}" data-title="${post.title}" data-body="${post.body}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger delete-btn" data-id="${post.id}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // --- CRUD Operations ---
+
+    // READ: Fetch and display all posts
+    function fetchPosts() {
+        toggleLoading('#list-loading', true);
+        $('#postsList').empty(); // Clear existing posts
+
+        $.ajax({
+            url: API_URL,
+            method: 'GET',
+            dataType: 'json',
+            success: function(posts) {
+                toggleLoading('#list-loading', false);
+                if (posts.length > 0) {
+                    $('#noPostsMessage').addClass('d-none');
+                    // We will only display the first 10 for a cleaner demo
+                    const displayPosts = posts.slice(0, 10); 
+                    $.each(displayPosts, function(i, post) {
+                        $('#postsList').append(createPostCard(post));
+                    });
+                } else {
+                    $('#noPostsMessage').removeClass('d-none');
+                }
+            },
+            error: function(xhr, status, error) {
+                toggleLoading('#list-loading', false);
+                showNotification('Error loading posts: ' + error, 'danger');
+            }
+        });
+    }
+
+    // CREATE / UPDATE: Handle form submission
+    $('#postForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const title = $('#postTitle').val();
+        const body = $('#postBody').val();
+        const userId = 1; // JSONPlaceholder requires a userId
+        
+        const postData = { title, body, userId };
+        const postId = $('#postId').val();
+        const method = postId ? 'PUT' : 'POST';
+        const url = postId ? `${API_URL}/${postId}` : API_URL;
+
+        toggleLoading('#form-loading', true);
+
+        $.ajax({
+            url: url,
+            method: method,
+            data: postData,
+            dataType: 'json',
+            success: function(response) {
+                toggleLoading('#form-loading', false);
+
+                if (method === 'POST') {
+                    // Create: JSONPlaceholder returns an object with ID 101, which is fine for demo
+                    // We prepend the new post to the list
+                    // Since it's a fake API, we assign a high ID to simulate a new entry
+                    response.id = 101 + Math.floor(Math.random() * 100); 
+                    $('#postsList').prepend(createPostCard(response));
+                    showNotification(`Post created successfully! (Fake ID: ${response.id})`);
+
+                } else if (method === 'PUT') {
+                    // Update: JSONPlaceholder returns the updated object with the correct ID
+                    const updatedPostHtml = createPostCard(response);
+                    $(`#post-${postId}`).replaceWith(updatedPostHtml);
+                    showNotification(`Post ID ${postId} updated successfully!`);
+                }
+                
+                resetForm();
+            },
+            error: function(xhr, status, error) {
+                toggleLoading('#form-loading', false);
+                showNotification(`Error ${method === 'POST' ? 'creating' : 'updating'} post: ${error}`, 'danger');
+            }
+        });
+    });
+
+    // UPDATE Handler (Edit Button Click)
+    $('#postsList').on('click', '.edit-btn', function() {
+        isEditing = true;
+        currentPostId = $(this).data('id');
+        
+        $('#formTitle').text(`Edit Post ID: ${currentPostId}`);
+        $('#postId').val(currentPostId);
+        $('#postTitle').val($(this).data('title'));
+        $('#postBody').val($(this).data('body'));
+        $('#submitBtn').html('<i class="fas fa-save"></i> Save Changes').removeClass('btn-primary').addClass('btn-warning');
+        $('#cancelEditBtn').removeClass('d-none');
+        
+        // Scroll to the form
+        $('html, body').animate({
+            scrollTop: $('#postForm').offset().top - 90
+        }, 500);
+    });
+
+    // DELETE Handler
+    $('#postsList').on('click', '.delete-btn', function() {
+        const postId = $(this).data('id');
+        
+        if (confirm(`Are you sure you want to delete Post ID ${postId}? (This is a fake deletion on JSONPlaceholder)`)) {
+            toggleLoading(`#post-${postId} .loading-overlay`, true); // Use a temporary local spinner (if one existed, but let's use a simpler UI block)
+            $(this).prop('disabled', true); // Simple block
+
+            $.ajax({
+                url: `${API_URL}/${postId}`,
+                method: 'DELETE',
+                success: function() {
+                    // Remove the card from the DOM without page reload
+                    $(`#post-${postId}`).fadeOut(300, function() {
+                        $(this).remove();
+                        showNotification(`Post ID ${postId} deleted successfully (Fake)!`);
+                        // Re-check if list is empty (for a proper app this would be in the fetch logic)
+                        if ($('#postsList').children().length === 0) {
+                             $('#noPostsMessage').removeClass('d-none');
+                        }
+                    });
+                },
+                error: function(xhr, status, error) {
+                    $(this).prop('disabled', false);
+                    showNotification(`Error deleting post ID ${postId}: ${error}`, 'danger');
+                }
+            });
+        }
+    });
+
+    // Cancel Edit Handler
+    $('#cancelEditBtn').on('click', resetForm);
+
+    // Initial Load
+    fetchPosts();
+});
+</script>
+
+</body>
+</html>
