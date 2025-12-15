@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>
+        <%= editing ? 'Edit Product' : 'Add Product' %>
+    </title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+
+<body>
+
+    <div class="admin-sidebar">
+        <h2>Admin Panel</h2>
+        <a href="/admin">Products</a>
+        <a href="/">Visit Website</a>
+    </div>
+
+    <div class="admin-content">
+        <a href="/admin" class="btn-admin btn-back">&larr; Back to Dashboard</a>
+
+        <h1>
+            <%= editing ? 'Edit Product' : 'Add New Product' %>
+        </h1>
+
+        <form action="<%= editing ? '/admin/product/update' : '/admin/product/create' %>" method="POST">
+
+            <% if (editing) { %>
+                <input type="hidden" name="id" value="<%= product._id %>">
+                <% } %>
+
+                    <div class="form-group">
+                        <label>Product Name</label>
+                        <input type="text" name="name" class="form-control" value="<%= editing ? product.name : '' %>"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category" class="form-control">
+                            <option value="Software" <%=(editing && product.category==='Software' ) ? 'selected' : '' %>
+                                >Software</option>
+                            <option value="Hardware" <%=(editing && product.category==='Hardware' ) ? 'selected' : '' %>
+                                >Hardware</option>
+                            <option value="Service" <%=(editing && product.category==='Service' ) ? 'selected' : '' %>
+                                >Service</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Price ($)</label>
+                        <input type="number" name="price" class="form-control"
+                            value="<%= editing ? product.price : '' %>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" class="form-control"
+                            rows="4"><%= editing ? product.description : '' %></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Icon Class (FontAwesome)</label>
+                        <input type="text" name="iconClass" class="form-control" placeholder="e.g. fa-solid fa-laptop"
+                            value="<%= editing ? product.iconClass : '' %>">
+                    </div>
+
+                    <button type="submit" class="btn-admin btn-create">
+                        <%= editing ? 'Update Product' : 'Create Product' %>
+                    </button>
+        </form>
+    </div>
+
+</body>
+
+</html>
