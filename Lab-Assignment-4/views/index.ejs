@@ -28,6 +28,8 @@
                 <div class="nav-cta">
                     <a href="/checkout" class="btn btn-ghost">Buy now</a>
                     <a href="#contact" class="btn btn-primary">Hire us!</a>
+                    <a href="/admin" class="btn btn-ghost"
+                        style="border-color: #333; color: #333; white-space: nowrap;">Admin</a>
                 </div>
             </div>
         </div>
@@ -81,21 +83,23 @@
             <div class="cards">
                 <% if (products.length> 0) { %>
                     <% products.forEach(product=> { %>
-                        <article class="card">
-                            <div class="pin"><i class="<%= product.iconClass %>"></i></div>
-                            <h3>
-                                <%= product.name %>
-                            </h3>
-                            <p>
-                                <%= product.description %>
-                            </p>
-                            <p style="font-weight: 700; color: var(--green); margin-top: auto;">Start from $<%=
-                                    product.price %>
-                            </p>
-                            <div class="tag" style="margin-top: 10px;">
-                                <%= product.category %>
-                            </div>
-                        </article>
+                        <a href="/product/<%= product._id %>" style="display: block; height: 100%;">
+                            <article class="card" style="height: 100%; display: flex; flex-direction: column;">
+                                <div class="pin"><i class="<%= product.iconClass %>"></i></div>
+                                <h3>
+                                    <%= product.name %>
+                                </h3>
+                                <p style="flex-grow: 1;">
+                                    <%= product.description %>
+                                </p>
+                                <p style="font-weight: 700; color: var(--green); margin-top: auto;">Start from $<%=
+                                        product.price %>
+                                </p>
+                                <div class="tag" style="margin-top: 10px;">
+                                    <%= product.category %>
+                                </div>
+                            </article>
+                        </a>
                         <% }) %>
                             <% } else { %>
                                 <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
@@ -189,10 +193,16 @@
 
                 <div class="well">
                     <h3>Send us a message</h3>
-                    <form class="contact" onsubmit="event.preventDefault(); alert('Thanks! This is a demo.');">
-                        <input class="input" type="text" placeholder="Your name" required>
-                        <input class="input" type="email" placeholder="Your e‑mail" required>
-                        <textarea class="input" placeholder="Message" required></textarea>
+
+                    <div id="success-msg"
+                        style="display:none; background: #d4edda; color: #155724; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c3e6cb; font-weight: 600;">
+                        ✅ Thanks! We received your message.
+                    </div>
+
+                    <form class="contact" action="/contact" method="POST">
+                        <input class="input" type="text" name="name" placeholder="Your name" required>
+                        <input class="input" type="email" name="email" placeholder="Your e‑mail" required>
+                        <textarea class="input" name="message" placeholder="Message" required></textarea>
                         <button class="btn btn-primary" type="submit">Hire us</button>
                     </form>
                 </div>
@@ -344,6 +354,7 @@
             // Header Scroll Logic
             const header = document.querySelector('header.site');
             const links = [...document.querySelectorAll('nav a')];
+            // Filter out potential nulls if ID doesn't exist on this page
             const sections = links.map(a => {
                 const id = a.getAttribute('href');
                 return id.startsWith('#') ? document.querySelector(id) : null;
@@ -398,6 +409,19 @@
                     });
                 }
             });
+
+            // UPDATED: Success Message Logic (No Black Screen)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('message_sent') === 'true') {
+                const msgBox = document.getElementById('success-msg');
+                if (msgBox) {
+                    msgBox.style.display = 'block';
+                    // Scroll to the contact section so they see the message
+                    document.getElementById('contact').scrollIntoView({ behavior: 'smooth' });
+                }
+                // Clean the URL without reloading
+                window.history.replaceState(null, null, window.location.pathname);
+            }
         </script>
 </body>
 

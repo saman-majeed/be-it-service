@@ -1,123 +1,238 @@
+/* Import fonts to match main site */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap');
+
 :root {
-    --admin-dark: #1a202c;
-    --admin-light: #2d3748;
-    --admin-accent: #4fd1c5;
-    --text-light: #e2e8f0;
+    /* Brand Colors from style.css */
+    --green: #4cb050;
+    --green-dark: #2e8f3a;
+    --text: #1e1f21;
+    --muted: #7a7f85;
+    --border: #e8eaed;
+    --bg: #f7f9fb;
+    --white: #fff;
 }
 
 body {
     display: flex;
     margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background: #f7fafc;
-    color: #333;
+    font-family: "Open Sans", sans-serif;
+    /* Matches main site */
+    background: var(--bg);
+    color: var(--text);
 }
 
+h1,
+h2,
+h3 {
+    font-family: 'Montserrat', sans-serif;
+    /* Matches main site */
+}
+
+/* ----- Sidebar (Matches Footer Color) ----- */
 .admin-sidebar {
-    width: 250px;
+    width: 260px;
     height: 100vh;
-    background: var(--admin-dark);
-    color: var(--text-light);
+    background: var(--text);
+    /* Dark grey like footer */
+    color: #aab2b9;
+    /* Footer text color */
     position: fixed;
-    padding: 20px;
+    padding: 30px;
+    box-sizing: border-box;
 }
 
 .admin-sidebar h2 {
-    color: var(--admin-accent);
-    margin-bottom: 40px;
+    color: var(--white);
+    margin-bottom: 50px;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Sidebar Links */
+.admin-sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #aab2b9;
+    text-decoration: none;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: 0.25s ease;
+}
+
+.admin-sidebar a i {
+    width: 20px;
     text-align: center;
 }
 
-.admin-sidebar a {
-    display: block;
-    color: var(--text-light);
-    text-decoration: none;
-    padding: 12px 15px;
-    margin-bottom: 10px;
-    border-radius: 6px;
-    transition: 0.3s;
-}
-
+/* Active/Hover State (Brand Green) */
 .admin-sidebar a:hover,
 .admin-sidebar a.active {
-    background: var(--admin-light);
-    color: var(--admin-accent);
+    background: rgba(76, 176, 80, 0.15);
+    /* Green with opacity */
+    color: var(--green);
 }
 
+/* ----- Main Content Area ----- */
 .admin-content {
-    margin-left: 250px;
-    padding: 40px;
+    margin-left: 260px;
+    padding: 50px;
     width: 100%;
 }
 
+.admin-content h1 {
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.admin-content p {
+    color: var(--muted);
+    margin-bottom: 30px;
+}
+
+/* ----- Tables ----- */
 table {
     width: 100%;
-    border-collapse: collapse;
-    background: white;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
     overflow: hidden;
-    margin-top: 20px;
-}
-
-th,
-td {
-    padding: 15px;
-    text-align: left;
-    border-bottom: 1px solid #edf2f7;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 }
 
 th {
-    background: var(--admin-light);
-    color: white;
+    background: #f8f9fa;
+    color: var(--text);
+    font-weight: 700;
+    padding: 18px 24px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
 }
 
+td {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* Product Icon in Table */
+td i {
+    color: var(--green);
+    font-size: 1.2rem;
+    margin-right: 10px;
+    background: rgba(76, 176, 80, 0.1);
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
+    text-align: center;
+    border-radius: 50%;
+}
+
+/* ----- Buttons (Brand Green) ----- */
 .btn-admin {
-    padding: 8px 16px;
-    border-radius: 4px;
+    padding: 10px 20px;
+    border-radius: 50px;
+    /* Pill shape like main site */
     text-decoration: none;
     font-size: 14px;
-    display: inline-block;
-    border: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 2px solid transparent;
     cursor: pointer;
-    margin-right: 5px;
+    transition: 0.25s;
 }
 
 .btn-create {
-    background: var(--admin-accent);
-    color: #000;
-    font-weight: bold;
+    background: var(--green);
+    color: var(--white);
+    margin-bottom: 25px;
+    box-shadow: 0 4px 10px rgba(76, 176, 80, 0.3);
+}
+
+.btn-create:hover {
+    background: var(--green-dark);
 }
 
 .btn-edit {
-    background: #ecc94b;
-    color: #000;
+    background: #fff;
+    border-color: var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+}
+
+.btn-edit:hover {
+    border-color: var(--text);
 }
 
 .btn-delete {
-    background: #f56565;
-    color: white;
+    background: #fff;
+    border-color: #ffebee;
+    color: #e53935;
+    padding: 6px 14px;
+    margin-left: 5px;
+}
+
+.btn-delete:hover {
+    background: #ffebee;
 }
 
 .btn-back {
-    background: #718096;
-    color: white;
+    background: transparent;
+    color: var(--muted);
+    padding: 0;
     margin-bottom: 20px;
 }
 
+.btn-back:hover {
+    color: var(--text);
+}
+
+/* ----- Forms ----- */
+form {
+    background: var(--white);
+    padding: 40px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    max-width: 600px;
+}
+
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
 }
 
 .form-control {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 15px;
+    transition: 0.2s;
+    box-sizing: border-box;
+    /* Fix width issues */
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(76, 176, 80, 0.1);
 }
