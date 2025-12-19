@@ -4,7 +4,8 @@ const path = require('path');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const Product = require('./models/Product');
-const Contact = require('./models/Contact'); // IMPORT CONTACT MODEL
+const Contact = require('./models/Contact');
+const Order = require('./models/Order');
 
 const PORT = process.env.PORT || 3000;
 
@@ -64,7 +65,6 @@ app.get('/admin/product/delete/:id', async (req, res) => {
 
 // ================= CUSTOMER ROUTES =================
 
-// Home Page
 app.get('/', async (req, res) => {
     let query = {};
     if (req.query.category) query.category = req.query.category;
@@ -80,7 +80,6 @@ app.get('/', async (req, res) => {
     res.render('index', { products, currentPage: page, totalPages, category: req.query.category || '' });
 });
 
-// Product Detail Page
 app.get('/product/:id', async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
@@ -90,7 +89,6 @@ app.get('/product/:id', async (req, res) => {
     }
 });
 
-// Add to Cart
 app.post('/add-to-cart/:id', async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!req.session.cart) req.session.cart = [];
@@ -98,7 +96,6 @@ app.post('/add-to-cart/:id', async (req, res) => {
     res.redirect('/checkout');
 });
 
-// Checkout Page
 app.get('/checkout', (req, res) => {
     const cart = req.session.cart || [];
     let total = 0;
@@ -106,7 +103,6 @@ app.get('/checkout', (req, res) => {
     res.render('checkout', { cart: cart, total: total });
 });
 
-// Clear Cart
 app.get('/clear-cart', (req, res) => {
     req.session.cart = [];
     res.redirect('/checkout');
@@ -114,7 +110,6 @@ app.get('/clear-cart', (req, res) => {
 
 app.get('/payment', (req, res) => res.render('payment'));
 
-// NEW: Contact Form Handler
 app.post('/contact', async (req, res) => {
     try {
         const newContact = new Contact({
@@ -123,7 +118,6 @@ app.post('/contact', async (req, res) => {
             message: req.body.message
         });
         await newContact.save();
-        console.log("New Message Saved!");
         res.redirect('/?message_sent=true#contact');
     } catch (err) {
         console.error(err);
@@ -131,7 +125,72 @@ app.post('/contact', async (req, res) => {
     }
 });
 
-// Seed Route
+// Existing Process Order (Pay on Delivery)
+app.post('/process-order', async (req, res) => {
+    try {
+        const cart = req.session.cart || [];
+        let total = 0;
+        cart.forEach(item => total += item.price);
+        total += 10;
+
+        const newOrder = new Order({
+            address: req.body.address,
+            contact: req.body.contact,
+            paymentMethod: req.body.payment,
+            items: cart,
+            total: total
+        });
+
+        await newOrder.save();
+        req.session.cart = [];
+        res.redirect('/checkout?order_success=true');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error processing order");
+    }
+});
+
+// 1. NEW: Prepare Payment (Saves address before going to payment page)
+app.post('/prepare-payment', (req, res) => {
+    req.session.pendingOrder = {
+        address: req.body.address,
+        contact: req.body.contact,
+        paymentMethod: 'Online Credit Card'
+    };
+    res.redirect('/payment');
+});
+
+// 2. NEW: Confirm Payment (Called when "Pay Now" is clicked)
+app.post('/confirm-payment', async (req, res) => {
+    try {
+        const cart = req.session.cart || [];
+        const orderInfo = req.session.pendingOrder || { address: "Unknown", contact: "Unknown", paymentMethod: "Online" };
+
+        let total = 0;
+        cart.forEach(item => total += item.price);
+        total += 10;
+
+        const newOrder = new Order({
+            address: orderInfo.address,
+            contact: orderInfo.contact,
+            paymentMethod: orderInfo.paymentMethod,
+            items: cart,
+            total: total
+        });
+
+        await newOrder.save();
+
+        // Clear data
+        req.session.cart = [];
+        req.session.pendingOrder = null;
+
+        res.redirect('/checkout?order_success=true');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error confirming payment");
+    }
+});
+
 app.get('/seed', async (req, res) => {
     await Product.deleteMany({});
     const products = [
